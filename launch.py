@@ -1,10 +1,17 @@
-import crypten
+# Copyright (c) Facebook, Inc. and its affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
 import torch
+import crypten
 import torch.nn as nn
 import torch.nn.functional as F
 import sys
 import crypten.communicator as comm 
 import time 
+import argparse
+import logging
+import os
 class AliceNet(nn.Module):
     def __init__(self):
         super(AliceNet, self).__init__()
@@ -19,16 +26,17 @@ class AliceNet(nn.Module):
         out = F.relu(out)
         out = self.fc3(out)
         return out
+
 def compute_accuracy(output, labels):
     pred = output.argmax(1)
     correct = pred.eq(labels)
     correct_count = correct.sum(0, keepdim=True).float()
     accuracy = correct_count.mul_(100.0 / output.size(0))
     return accuracy
+
 def encrypt_model_and_data():
     ALICE=0
     BOB=1
-    
     count=100
     crypten.init()
     # Load pre-trained model to Alice
@@ -45,7 +53,6 @@ def encrypt_model_and_data():
     data_enc2 = data_enc[:count]
     #print(data_enc.size(),data_enc2.size())
     data_flatten = data_enc2.flatten(start_dim=1)
-
     # Classify the encrypted data
     private_model.eval()
     if comm.get().get_rank()==0:
@@ -65,5 +72,10 @@ def encrypt_model_and_data():
     labels = torch.load('testlabel.pth').long()
     accuracy = compute_accuracy(output, labels[:count])
     crypten.print("\tAccuracy: {0:.4f}".format(accuracy.item()),comm.get().get_rank())
-    
     return accuracy
+
+
+if __name__ == "__main__":
+    crypten.common.serial.register_safe_class(AliceNet)
+    encrypt_model_and_data()
+
