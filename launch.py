@@ -55,18 +55,15 @@ def encrypt_model_and_data():
     data_flatten = data_enc2.flatten(start_dim=1)
     # Classify the encrypted data
     private_model.eval()
+    
     if comm.get().get_rank()==0:
         print('now your turn 0!',)
-        t0=time.time_ns()
+
     if comm.get().get_rank()==1:
         print('now your turn 1!',)
-        t1=time.time_ns()
+
     output_enc = private_model(data_flatten)
-    if comm.get().get_rank()==0:
-        print('we work together to compute! T0 time interval: ',(time.time_ns()-t0)/(10**9))
-    
-    if comm.get().get_rank()==1:
-        print('we work together to compute! T1 time interval: ',(time.time_ns()-t1)/(10**9))
+
     # Compute the accuracy
     output = output_enc.get_plain_text()
     labels = torch.load('testlabel.pth').long()
