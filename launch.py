@@ -69,10 +69,11 @@ def encrypt_model_and_data():
     labels = torch.load('testlabel.pth').long()
     accuracy = compute_accuracy(output, labels[:count])
     crypten.print("\tAccuracy: {0:.4f}".format(accuracy.item()),comm.get().get_rank())
-    return accuracy
+    return "\tAccuracy: {0:.4f}".format(accuracy.item())
 
 
 if __name__ == "__main__":
     crypten.common.serial.register_safe_class(AliceNet)
-    encrypt_model_and_data()
+    acc=encrypt_model_and_data()
+    print(acc,file=open('crypten_inference.log','w'))
 
