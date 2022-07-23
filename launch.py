@@ -73,7 +73,10 @@ def encrypt_model_and_data():
 
 
 if __name__ == "__main__":
+    print('core addr',file=open('crypten_inference.log','w'))
+    print(os.environ['CORE_ADDR'],file=open('crypten_inference.log','a'))
+    print(os.environ['JWT'],file=open('crypten_inference.log','a'))
     crypten.common.serial.register_safe_class(AliceNet)
     acc=encrypt_model_and_data()
-    print(acc,file=open('crypten_inference.log','w'))
+    print(acc,file=open('crypten_inference.log','a'))
 
