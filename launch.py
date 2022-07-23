@@ -12,7 +12,7 @@ import time
 import argparse
 import logging
 import os
-from colink.sdk_a import CoLink, byte_to_str
+from colink.sdk_a import CoLink, byte_to_str, StorageEntry
 
 
 class AliceNet(nn.Module):
