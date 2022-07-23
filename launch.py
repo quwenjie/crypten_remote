@@ -74,9 +74,25 @@ def encrypt_model_and_data():
 
 if __name__ == "__main__":
     print('core addr',file=open('crypten_inference.log','w'))
-    print(os.environ['CORE_ADDR'],file=open('crypten_inference.log','a'))
-    print(os.environ['JWT'],file=open('crypten_inference.log','a'))
+    core_addr=os.environ['CORE_ADDR']
+    jwt=os.environ['JWT']
+    app_id=os.environ['CRYPTEN_APP_ID']
+    cl=CoLink(core_addr,jwt)
+    res = cl.read_entries(
+            [
+                StorageEntry(
+                    key_name="crypten:{}:config".format(app_id),
+                )
+            ]
+        )
+    if res is not None:
+        json_str=byte_to_str(res[0].payload)
+        print(json_str,file=open('crypten_inference.log','a'))
+    else:
+        print('read json in storage failure',file=open('crypten_inference.log','a'))
+        sys.exit()
     crypten.common.serial.register_safe_class(AliceNet)
     acc=encrypt_model_and_data()
     print(acc,file=open('crypten_inference.log','a'))
+
 
