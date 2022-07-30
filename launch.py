@@ -146,9 +146,12 @@ if __name__ == "__main__":
         output.append(out)
     output=crypten.cat(output,dim=0)
     output=output.get_plain_text()
-
-    #print(acc, file=open("crypten_inference.log", "a"))
-    print(output.argmax(1))
+    pred=output.argmax(1)
+    print(pred)
     torch.save(output,'1.bin')  
-    labels = torch.load("testlabel.pth").long()
-    print(labels[: inference_config["inference_number"]])
+    labels = torch.load("testlabel.pth").long()[: inference_config["inference_number"]]
+    print(labels)
+    correct = pred.eq(labels)
+    correct_count = correct.sum(0, keepdim=True).float()
+    accuracy = correct_count.mul_(100.0 / output.size(0))
+    print(accuracy)
