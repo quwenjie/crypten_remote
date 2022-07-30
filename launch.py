@@ -104,27 +104,26 @@ if __name__ == "__main__":
         model = model_class(**arch_arg)
 
     if model_config["pretrained"] == True:  # need to download file
-        if rank==ALICE:
-            loc = model_config["location"]
-            model = load_from_location(loc, src=ALICE)
+        loc = model_config["location"]
+        model = load_from_location(loc, src=ALICE)
 
     print('alice here!')
     
-    if rank==BOB:
-        dataset_loc=dataset_config["location"]
-        data_enc = load_from_location(dataset_loc, src=BOB)
-        print('bob xxx')
-        data_dec = data_enc.get_plain_text()
-        data_dec = data_dec[: inference_config["inference_number"]]
-        for i in range(len(transform_config)):
-            trans_config = transform_config[i]["construct_arg"]
-            trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
-            trans = trans_class(**trans_config)
-            data_dec = trans(data_dec)
-            data_dec=data_dec.reshape([-1]+input_shape[1:])
-        print('fuck!')
-        input_data=crypten.cryptensor(data_dec)
-        print('here end!')
+
+    dataset_loc=dataset_config["location"]
+    data_enc = load_from_location(dataset_loc, src=BOB)
+    print('bob xxx')
+    data_dec = data_enc.get_plain_text()
+    data_dec = data_dec[: inference_config["inference_number"]]
+    for i in range(len(transform_config)):
+        trans_config = transform_config[i]["construct_arg"]
+        trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
+        trans = trans_class(**trans_config)
+        data_dec = trans(data_dec)
+        data_dec=data_dec.reshape([-1]+input_shape[1:])
+    print('fuck!')
+    input_data=crypten.cryptensor(data_dec)
+    print('here end!')
     
     dummy_input = torch.empty(input_shape)
     private_model = crypten.nn.from_pytorch(model, dummy_input)
