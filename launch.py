@@ -148,7 +148,7 @@ if __name__ == "__main__":
     output=output.get_plain_text()
 
     #print(acc, file=open("crypten_inference.log", "a"))
-    print(output)
+    print(output.argmax(1))
     torch.save(output,'1.bin')  
     labels = torch.load("testlabel.pth").long()
     print(labels[: inference_config["inference_number"]])
