@@ -44,8 +44,7 @@ def encrypt_model_and_data():
     BOB = 1
     count = 100
     crypten.init()
-    # Load pre-trained model to Alice
-    # sys.modules['AliceNet']=AliceNet
+
     model = crypten.load_from_party("model.pth", src=ALICE)
 
     # Encrypt model from Alice
