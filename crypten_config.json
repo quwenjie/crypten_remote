@@ -1,11 +1,4 @@
 {
-  "architecture2": {
-    "name": "resnet18",
-    "type": "pytorch-builtin",
-    "construct_arg": {
-      "pretrained": true
-    }
-  },
   "architecture": {
     "name": "MLP",
     "type": "custom",
@@ -23,7 +16,7 @@
     "pretrained": true,
     "location": {
       "type": "online",
-      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/model3.pth"
+      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/model.pth"
     }
   },
   "dataset": {

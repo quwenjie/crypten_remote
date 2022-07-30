@@ -67,8 +67,6 @@ def compute_accuracy(output, labels):
 
 
 if __name__ == "__main__":
-    """
-    print("core addr", file=open("crypten_inference.log", "w"))
     core_addr = os.environ["CORE_ADDR"]
     jwt = os.environ["JWT"]
     app_id = os.environ["CRYPTEN_APP_ID"]
@@ -82,12 +80,11 @@ if __name__ == "__main__":
     )
     if res is not None:
         json_str = byte_to_str(res[0].payload)
-        print(json_str, file=open("crypten_inference.log", "a"))
+        print("use json:\n",json_str, file=open("crypten_inference.log", "a"))
     else:
         print("read json in storage failure", file=open("crypten_inference.log", "a"))
         sys.exit()
-    """
-    json_str = open("1.json", "r", encoding="utf8").read()
+    
     json_data = json.loads(json_str)
     architecture_config = json_data["architecture"]
     inference_config = json_data["inference"]
@@ -117,7 +114,7 @@ if __name__ == "__main__":
     if model_config["pretrained"] == True:  # need to download file
         loc = model_config["location"]
         model = load_from_location(loc, src=ALICE)
-    
+
 
     dataset_loc=dataset_config["location"]
     data_enc = load_from_location(dataset_loc, src=BOB)
@@ -147,11 +144,11 @@ if __name__ == "__main__":
     output=crypten.cat(output,dim=0)
     output=output.get_plain_text()
     pred=output.argmax(1)
-    print(pred)
+    print(pred, file=open("crypten_inference.log", "a"))
     torch.save(output,'1.bin')  
     labels = torch.load("testlabel.pth").long()[: inference_config["inference_number"]]
-    print(labels)
+    print(labels, file=open("crypten_inference.log", "a"))
     correct = pred.eq(labels)
     correct_count = correct.sum(0, keepdim=True).float()
     accuracy = correct_count.mul_(100.0 / output.size(0))
-    print(accuracy)
+    print(accuracy, file=open("crypten_inference.log", "a"))
