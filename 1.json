@@ -23,7 +23,7 @@
     "pretrained": true,
     "location": {
       "type": "online",
-      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/model2.pth"
+      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/model3.pth"
     }
   },
   "dataset": {
