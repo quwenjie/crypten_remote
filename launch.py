@@ -12,23 +12,41 @@ import time
 import argparse
 import logging
 import os
+import json
+import torchvision
 from colink.sdk_a import CoLink, byte_to_str, StorageEntry
 
 
-class AliceNet(nn.Module):
-    def __init__(self):
-        super(AliceNet, self).__init__()
-        self.fc1 = nn.Linear(784, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.fc3 = nn.Linear(128, 10)
+class MLP(nn.Module):
+    def __init__(self, layer_emb, activation):
+        super().__init__()
+        layers = []
+        for i in range(len(layer_emb) - 1):
+            layers.append(nn.Linear(layer_emb[i], layer_emb[i + 1]))
+            if i != len(layer_emb) - 2:
+                if activation == "relu":
+                    layers.append(nn.ReLU())
+        self.net = nn.Sequential(*layers)
 
-    def forward(self, x):
-        out = self.fc1(x)
-        out = F.relu(out)
-        out = self.fc2(out)
-        out = F.relu(out)
-        out = self.fc3(out)
-        return out
+    def forward(self, input):
+        return self.net(input)
+
+
+def download_online_file(path):
+    basename = os.path.basename(path)
+    if os.path.exists(basename):  # remove repeated file
+        os.remove(basename)
+    os.system("wget {}".format(path))
+    return basename
+
+
+def load_from_location(loc, src):
+    if loc["type"] == "online":
+        basename = download_online_file(loc["path"])
+        data = crypten.load_from_party(basename, src=src)
+    else:
+        print("location type {} not supported!".format(loc["type"]))
+    return data
 
 
 def compute_accuracy(output, labels):
@@ -39,48 +57,8 @@ def compute_accuracy(output, labels):
     return accuracy
 
 
-def encrypt_model_and_data():
-    ALICE = 0
-    BOB = 1
-    count = 100
-    crypten.init()
-
-    model = crypten.load_from_party("model.pth", src=ALICE)
-
-    # Encrypt model from Alice
-    dummy_input = torch.empty((1, 784))
-    private_model = crypten.nn.from_pytorch(model, dummy_input)
-    private_model.encrypt(src=ALICE)
-
-    # Load data to Bob
-    data_enc = crypten.load_from_party("bob_test.pth", src=BOB)
-    data_enc2 = data_enc[:count]
-    # print(data_enc.size(),data_enc2.size())
-    data_flatten = data_enc2.flatten(start_dim=1)
-    # Classify the encrypted data
-    private_model.eval()
-
-    if comm.get().get_rank() == 0:
-        print(
-            "now your turn 0!",
-        )
-
-    if comm.get().get_rank() == 1:
-        print(
-            "now your turn 1!",
-        )
-
-    output_enc = private_model(data_flatten)
-
-    # Compute the accuracy
-    output = output_enc.get_plain_text()
-    labels = torch.load("testlabel.pth").long()
-    accuracy = compute_accuracy(output, labels[:count])
-    crypten.print("\tAccuracy: {0:.4f}".format(accuracy.item()), comm.get().get_rank())
-    return "\tAccuracy: {0:.4f}".format(accuracy.item())
-
-
 if __name__ == "__main__":
+    """
     print("core addr", file=open("crypten_inference.log", "w"))
     core_addr = os.environ["CORE_ADDR"]
     jwt = os.environ["JWT"]
@@ -99,6 +77,60 @@ if __name__ == "__main__":
     else:
         print("read json in storage failure", file=open("crypten_inference.log", "a"))
         sys.exit()
-    crypten.common.serial.register_safe_class(AliceNet)
-    acc = encrypt_model_and_data()
+    """
+    json_str = open("1.json", "r", encoding="utf8").read()
+    json_data = json.loads(json_str)
+    architecture_config = json_data["architecture"]
+    inference_config = json_data["inference"]
+    transform_config = json_data["transform"]
+    dataset_config=json_data["dataset"]
+    model_config = json_data["model"]
+    
+    ALICE = 0
+    BOB = 1
+    crypten.init()
+
+    if architecture_config["type"] == "pytorch-builtin":
+        arch_arg = architecture_config["construct_arg"]
+        model_class = getattr(torchvision.models, architecture_config["name"])
+        model = model_class(**arch_arg)
+
+    elif architecture_config["type"] == "custom":
+        arch_arg = architecture_config["construct_arg"]
+        model_class = getattr(sys.modules[__name__], architecture_config["name"])
+        model = model_class(**arch_arg)
+
+    if model_config["pretrained"] == True:  # need to download file
+        loc = model_config["location"]
+        model = load_from_location(loc, src=ALICE)
+
+    dataset_loc=dataset_config["location"]
+    data_enc = load_from_location(dataset_loc, src=BOB)
+    data_dec = data_enc.get_plain_text()
+    data_dec = data_dec[: inference_config["inference_number"]]
+    for i in range(len(transform_config)):
+        trans_config = transform_config[i]["construct_arg"]
+        trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
+        trans = trans_class(**trans_config)
+        data_dec = trans(data_dec)
+    input_shape=json_data['input_shape']
+    dummy_input = torch.empty(input_shape)
+    private_model = crypten.nn.from_pytorch(model, dummy_input)
+    private_model.encrypt(src=ALICE)
+
+    private_model.eval()
+    data_dec=data_dec.reshape([-1]+input_shape[1:])
+
+    input_data=crypten.cryptensor(data_dec)
+    batch_size=inference_config["batch_size"]
+    output=[]
+
+    for b in range((input_data.size(0)-1)//batch_size+1):
+        input_batch=input_data[b*batch_size:(b+1)*batch_size]
+        out=private_model(input_batch)
+        output.append(out)
+    output=crypten.cat(output,dim=0)
+    print(output.size())
+
+
     print(acc, file=open("crypten_inference.log", "a"))

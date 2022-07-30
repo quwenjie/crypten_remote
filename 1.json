@@ -1,0 +1,59 @@
+{
+  "architecture2": {
+    "name": "resnet18",
+    "type": "pytorch-builtin",
+    "construct_arg": {
+      "pretrained": true
+    }
+  },
+  "architecture": {
+    "name": "MLP",
+    "type": "custom",
+    "construct_arg": {
+      "layer_emb": [
+        784,
+        128,
+        128,
+        10
+      ],
+      "activation": "relu"
+    }
+  },
+  "model": {
+    "pretrained": true,
+    "location": {
+      "type": "online",
+      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/model2.pth"
+    }
+  },
+  "dataset": {
+    "type": "Image",
+    "name": "MNIST",
+    "location": {
+      "type": "online",
+      "path": "https://raw.githubusercontent.com/quwenjie/crypten_remote/main/bob_test.pth"
+    }
+  },
+  "transform": [
+    {
+      "type": "CenterCrop",
+      "construct_arg": {
+        "size": 22
+      }
+    },
+    {
+      "type": "Resize",
+      "construct_arg": {
+        "size": 28
+      }
+    }
+  ],
+  "input_shape": [
+    1,
+    784
+  ],
+  "inference": {
+    "batch_size": 10,
+    "inference_number": 97
+  }
+}
