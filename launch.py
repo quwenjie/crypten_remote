@@ -20,16 +20,22 @@ from colink.sdk_a import CoLink, byte_to_str, StorageEntry
 class MLP(nn.Module):
     def __init__(self, layer_emb, activation):
         super().__init__()
-        layers = []
+        self.layer_cnt=0
+        
         for i in range(len(layer_emb) - 1):
-            layers.append(nn.Linear(layer_emb[i], layer_emb[i + 1]))
+            setattr(self,'layer{}'.format(self.layer_cnt),nn.Linear(layer_emb[i], layer_emb[i + 1]))
+            self.layer_cnt+=1
             if i != len(layer_emb) - 2:
                 if activation == "relu":
-                    layers.append(nn.ReLU())
-        self.net = nn.Sequential(*layers)
+                    setattr(self,'layer{}'.format(self.layer_cnt),nn.ReLU())
+                    self.layer_cnt+=1
 
     def forward(self, input):
-        return self.net(input)
+        x=input
+        for i in range(self.layer_cnt):
+            layer=getattr(self,'layer{}'.format(i))
+            x=layer(x)
+        return x
 
 
 def download_online_file(path):
