@@ -85,10 +85,13 @@ if __name__ == "__main__":
     transform_config = json_data["transform"]
     dataset_config=json_data["dataset"]
     model_config = json_data["model"]
+    input_shape=json_data['input_shape']
     
     ALICE = 0
     BOB = 1
     crypten.init()
+
+    rank = comm.get().get_rank()
 
     if architecture_config["type"] == "pytorch-builtin":
         arch_arg = architecture_config["construct_arg"]
@@ -101,27 +104,31 @@ if __name__ == "__main__":
         model = model_class(**arch_arg)
 
     if model_config["pretrained"] == True:  # need to download file
-        loc = model_config["location"]
-        model = load_from_location(loc, src=ALICE)
+        if rank==ALICE:
+            loc = model_config["location"]
+            model = load_from_location(loc, src=ALICE)
 
-    dataset_loc=dataset_config["location"]
-    data_enc = load_from_location(dataset_loc, src=BOB)
-    data_dec = data_enc.get_plain_text()
-    data_dec = data_dec[: inference_config["inference_number"]]
-    for i in range(len(transform_config)):
-        trans_config = transform_config[i]["construct_arg"]
-        trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
-        trans = trans_class(**trans_config)
-        data_dec = trans(data_dec)
-    input_shape=json_data['input_shape']
+    
+    if rank==BOB:
+        dataset_loc=dataset_config["location"]
+        data_enc = load_from_location(dataset_loc, src=BOB)
+        data_dec = data_enc.get_plain_text()
+        data_dec = data_dec[: inference_config["inference_number"]]
+        for i in range(len(transform_config)):
+            trans_config = transform_config[i]["construct_arg"]
+            trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
+            trans = trans_class(**trans_config)
+            data_dec = trans(data_dec)
+            data_dec=data_dec.reshape([-1]+input_shape[1:])
+        input_data=crypten.cryptensor(data_dec)
+    
     dummy_input = torch.empty(input_shape)
     private_model = crypten.nn.from_pytorch(model, dummy_input)
     private_model.encrypt(src=ALICE)
-
     private_model.eval()
-    data_dec=data_dec.reshape([-1]+input_shape[1:])
+    
 
-    input_data=crypten.cryptensor(data_dec)
+    
     batch_size=inference_config["batch_size"]
     output=[]
 
