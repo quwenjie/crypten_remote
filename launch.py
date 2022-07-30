@@ -131,7 +131,7 @@ if __name__ == "__main__":
         trans_class = getattr(torchvision.transforms, transform_config[i]["type"])
         trans = trans_class(**trans_config)
         data_dec = trans(data_dec)
-        data_dec=data_dec.reshape([-1]+input_shape[1:])
+    data_dec=data_dec.reshape([-1]+input_shape[1:])
     print('fuck!')
     input_data=crypten.cryptensor(data_dec)
     print('here end!')
