@@ -105,11 +105,13 @@ if __name__ == "__main__":
         arch_arg = architecture_config["construct_arg"]
         model_class = getattr(sys.modules[__name__], architecture_config["name"])
         model = model_class(**arch_arg)
+    
+    crypten.common.serial.register_safe_class(model_class)
 
     if model_config["pretrained"] == True:  # need to download file
         loc = model_config["location"]
         model = load_from_location(loc, src=ALICE)
-
+    
     print('alice here!')
     
 
