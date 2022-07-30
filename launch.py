@@ -48,8 +48,6 @@ def download_online_file(path):
 
 def load_from_location(loc, src):
     if loc["type"] == "online":
-        basename=""
-        #if comm.get().get_rank()==src:
         basename = download_online_file(loc["path"])
         data = crypten.load_from_party(basename, src=src)
         return data
